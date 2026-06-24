@@ -1,0 +1,394 @@
+:root {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-alt: #f9fbff;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --border: rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+input,
+textarea,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.section {
+  padding: 4rem 1.5rem;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.site-logo {
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--primary-dark);
+}
+
+.menu-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-links.open {
+  display: flex;
+}
+
+@media (max-width: 720px) {
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+}
+
+.hero {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.9), rgba(37, 99, 235, 0.6)), url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat;
+  color: white;
+  padding: 5rem 1.5rem;
+  position: relative;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.hero-content {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 4vw, 4rem);
+  margin: 0;
+}
+
+.hero-subtitle {
+  margin: 1.25rem 0 1.75rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.05rem;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn,
+.hero-actions .btn {
+  padding: 0.95rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: #ffffff;
+  color: #2563eb;
+}
+
+.btn-primary:hover {
+  background: #f3f4fd;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.section-heading {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 2.25rem;
+}
+
+.section-heading p {
+  margin: 0.75rem auto 0;
+  max-width: 620px;
+  color: var(--muted);
+}
+
+.notification-card,
+.blog-card,
+.contact-card,
+.about-card {
+  background: var(--surface);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.06);
+}
+
+.notification-card {
+  padding: 2rem;
+  margin-top: -2rem;
+}
+
+.notification-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.notification-card button {
+  width: 100%;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+}
+
+.notification-card button:hover {
+  background: #dbeafe;
+}
+
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.blog-card {
+  overflow: hidden;
+}
+
+.blog-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.blog-card-body {
+  padding: 1.5rem;
+}
+
+.blog-card-body h3 {
+  margin: 0 0 0.75rem;
+}
+
+.blog-card-body p {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.card-btn {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.card-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.about-card,
+.contact-card {
+  padding: 2rem;
+}
+
+.about-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.contact-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: grid;
+  gap: 0.5rem;
+}
+
+label {
+  font-weight: 600;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 1rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  color: var(--text);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.95rem;
+}
+
+.footer {
+  background: var(--surface);
+  padding: 2rem 1.5rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.footer-grid h3,
+.footer-grid h4 {
+  margin-top: 0;
+}
+
+.footer-grid a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.footer-grid a:hover {
+  color: var(--primary);
+}
+
+.footer-bottom {
+  text-align: center;
+  margin-top: 2rem;
+  color: var(--muted);
+}
+
+@media (max-width: 960px) {
+  .blog-grid,
+  .notification-grid,
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .notification-grid,
+  .blog-grid,
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .nav-links {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
