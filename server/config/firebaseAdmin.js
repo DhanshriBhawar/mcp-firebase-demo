@@ -5,7 +5,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const serviceAccountPath = path.join(__dirname, '../serviceAccount.json');
+const serviceAccountPath = JSON.parse(
+  process.env.FIREBASE_SERVICE_ACCOUNT
+);
 const serviceAccountData = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
 const adminApp = !admin.apps.length
