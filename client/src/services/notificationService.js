@@ -5,7 +5,7 @@ const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mcp-f
 const API_PREFIX = `${DEFAULT_API_BASE_URL.replace(/\/+$/, '')}/api`;
 const DEFAULT_TIMEOUT_MS = 10000;
 const MCP_POLL_INTERVAL_MS = 250;
-const MCP_POLL_TIMEOUT_MS = 5000;
+const MCP_POLL_TIMEOUT_MS = 10000;
 
 const log = (message) => {
   console.log(`[NotificationService] ${message}`);
@@ -172,16 +172,24 @@ export const getAnonymousId = async () => {
   }
 
   log('Reading MCP Anonymous ID...');
-  const mcpId = await waitForMcpAnonymousId();
+  const mcpId = await waitForMcpAnonymousId(MCP_POLL_TIMEOUT_MS);
   if (isValidAnonymousId(mcpId)) {
     localStorage.setItem('anonymousId', mcpId);
     log('MCP Anonymous ID found.');
     return mcpId;
   }
 
+  log('Waiting longer for MCP beacon to initialize...');
+  const extendedMcpId = await waitForMcpAnonymousId(15000);
+  if (isValidAnonymousId(extendedMcpId)) {
+    localStorage.setItem('anonymousId', extendedMcpId);
+    log('MCP Anonymous ID found after extended wait.');
+    return extendedMcpId;
+  }
+
   const tempId = generateUuid();
   localStorage.setItem('anonymousId', tempId);
-  log('MCP Anonymous ID not found. Using temporary anonymousId.');
+  log('MCP Anonymous ID unavailable. Using temporary anonymousId.');
   pollForRealAnonymousId(tempId).catch((error) => {
     log(`Background MCP ID poll failed: ${error.message}`);
   });
