@@ -12,6 +12,9 @@ function NotificationCenter() {
   const [tokenExists, setTokenExists] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+  const apiPrefix = apiBaseUrl ? `${apiBaseUrl}/api` : '/api';
+
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
@@ -83,7 +86,7 @@ function NotificationCenter() {
       setTokenStatus('generated');
       setShowToken(true);
 
-      const response = await fetch('http://localhost:5000/api/save-token', {
+      const response = await fetch(`${apiPrefix}/save-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: currentToken }),
@@ -108,7 +111,7 @@ function NotificationCenter() {
     setDeliveryStatus('sending');
 
     try {
-      const response = await fetch('http://localhost:5000/api/send-push', {
+      const response = await fetch(`${apiPrefix}/send-push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'FleetEdge Test', body: 'Hello from Firebase Web Push' }),
@@ -148,7 +151,7 @@ function NotificationCenter() {
           // Check backend status
           setErrorMessage('');
           try {
-            const resp = await fetch('http://localhost:5000/api/status');
+            const resp = await fetch(`${apiPrefix}/status`);
             const data = await resp.json();
             if (resp.ok && data.success) {
               setBackendStatus('Connected');

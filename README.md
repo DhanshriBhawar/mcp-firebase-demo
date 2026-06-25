@@ -99,6 +99,22 @@ npm run dev
 5. In terminal 2, run the backend: `cd server && npm run dev`.
 6. Verify both applications are running by visiting the URLs above.
 
+## Deployment and Environment Variables
+
+For the frontend to call the backend after deploy, set the API base URL in Vercel or your hosting provider.
+
+- In development, the app uses `http://localhost:5000` by default.
+- In production, set `VITE_API_BASE_URL` to your deployed backend URL.
+- If no production URL is configured, the app will call `/api/*` on the same origin.
+
+Example `client/.env.example`:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+If you deploy the frontend and backend separately, make sure the frontend `VITE_API_BASE_URL` points to your backend deployment.
+
 ## Notes
 
 - This project uses React functional components and hooks.
