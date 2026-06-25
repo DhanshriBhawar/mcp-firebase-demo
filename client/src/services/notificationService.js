@@ -161,39 +161,28 @@ export const generateToken = async (serviceWorkerRegistration) => {
 };
 
 export const getAnonymousId = async () => {
-  const storedId = localStorage.getItem('anonymousId');
-  if (isValidAnonymousId(storedId)) {
-    if (isTemporaryAnonymousId(storedId)) {
-      pollForRealAnonymousId(storedId).catch((error) => {
-        log(`Background MCP ID poll failed: ${error.message}`);
-      });
+
+    // Always try MCP first
+    const mcpId = await waitForMcpAnonymousId(5000);
+
+    if (isValidAnonymousId(mcpId)) {
+        localStorage.setItem("anonymousId", mcpId);
+        return mcpId;
     }
-    return storedId;
-  }
 
-  log('Reading MCP Anonymous ID...');
-  const mcpId = await waitForMcpAnonymousId(MCP_POLL_TIMEOUT_MS);
-  if (isValidAnonymousId(mcpId)) {
-    localStorage.setItem('anonymousId', mcpId);
-    log('MCP Anonymous ID found.');
-    return mcpId;
-  }
+    // Then check local storage
+    const storedId = localStorage.getItem("anonymousId");
 
-  log('Waiting longer for MCP beacon to initialize...');
-  const extendedMcpId = await waitForMcpAnonymousId(15000);
-  if (isValidAnonymousId(extendedMcpId)) {
-    localStorage.setItem('anonymousId', extendedMcpId);
-    log('MCP Anonymous ID found after extended wait.');
-    return extendedMcpId;
-  }
+    if (isValidAnonymousId(storedId)) {
+        return storedId;
+    }
 
-  const tempId = generateUuid();
-  localStorage.setItem('anonymousId', tempId);
-  log('MCP Anonymous ID unavailable. Using temporary anonymousId.');
-  pollForRealAnonymousId(tempId).catch((error) => {
-    log(`Background MCP ID poll failed: ${error.message}`);
-  });
-  return tempId;
+    // Finally create a temp id
+    const tempId = generateUuid();
+
+    localStorage.setItem("anonymousId", tempId);
+
+    return tempId;
 };
 
 const pollForRealAnonymousId = async (tempId) => {
