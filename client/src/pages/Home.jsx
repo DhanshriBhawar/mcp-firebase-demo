@@ -49,7 +49,7 @@ function Home() {
         <section className="section container" id="notification-center">
           <div className="section-heading">
             <h2>Notification Center</h2>
-            <p>This section is reserved for Firebase Web Push Notifications and MCP integration in the next phase.</p>
+            <p>Firebase Web Push is initialized automatically so visitors can receive notifications without manual setup. MCP integration will be added later.</p>
           </div>
           <NotificationCenter />
         </section>

@@ -101,19 +101,27 @@ npm run dev
 
 ## Deployment and Environment Variables
 
-For the frontend to call the backend after deploy, set the API base URL in Vercel or your hosting provider.
+This app now initializes Firebase push notifications automatically in the background when the website loads.
 
-- In development, the app uses `http://localhost:5000` by default.
-- In production, set `VITE_API_BASE_URL` to your deployed backend URL.
+- In development, the frontend uses `http://localhost:5000` for the backend by default.
+- In production, the frontend uses the deployed backend URL `https://mcp-firebase-demo-2.onrender.com`.
+- If you deploy the frontend and backend separately, set `VITE_API_BASE_URL` in the frontend deployment to your backend URL.
 - If no production URL is configured, the app will call `/api/*` on the same origin.
 
 Example `client/.env.example`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:5000
+VITE_API_BASE_URL=https://mcp-firebase-demo-2.onrender.com
 ```
 
-If you deploy the frontend and backend separately, make sure the frontend `VITE_API_BASE_URL` points to your backend deployment.
+The notification flow now works like this:
+
+1. Website loads
+2. Service worker registers
+3. Notification permission is requested automatically if needed
+4. Firebase FCM token is generated automatically when permission is granted
+5. The token is saved to the backend automatically
+6. Only the `Send Test Notification` button remains for manual delivery testing
 
 ## Notes
 
