@@ -1,39 +1,88 @@
 import admin from '../config/firebaseAdmin.js';
+import { readTokens, writeTokens } from '../utils/tokenStore.js';
 
-let savedToken = '';
+const normalizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
 export const saveToken = async (req, res) => {
-  const { token } = req.body;
+  const anonymousId = normalizeString(req.body.anonymousId);
+  const token = normalizeString(req.body.token);
+  const browser = normalizeString(req.body.browser);
+  const platform = normalizeString(req.body.platform);
 
-  if (!token || typeof token !== 'string') {
-    return res.status(400).json({ success: false, error: 'A valid token is required.' });
+  if (!anonymousId || !token) {
+    return res.status(400).json({ success: false, error: 'anonymousId and token are required.' });
   }
 
-  savedToken = token;
-  console.log('FCM Token:', savedToken);
+  const now = new Date().toISOString();
+  const tokens = await readTokens();
+  let changed = false;
+  let record = tokens.find((item) => item.anonymousId === anonymousId);
 
-  return res.json({ success: true, message: 'Token Saved' });
+  if (record) {
+    record.token = token;
+    record.browser = browser || record.browser;
+    record.platform = platform || record.platform;
+    record.updatedAt = now;
+    changed = true;
+  } else {
+    record = tokens.find((item) => item.token === token);
+    if (record) {
+      record.anonymousId = anonymousId;
+      record.browser = browser || record.browser;
+      record.platform = platform || record.platform;
+      record.updatedAt = now;
+      changed = true;
+    }
+  }
+
+  if (!record) {
+    record = {
+      anonymousId,
+      email: null,
+      customerId: null,
+      token,
+      browser: browser || null,
+      platform: platform || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    tokens.push(record);
+    changed = true;
+  }
+
+  if (changed) {
+    await writeTokens(tokens);
+    console.log('Token stored for anonymousId:', anonymousId);
+  }
+
+  return res.json({ success: true, totalVisitors: tokens.length });
 };
 
-export const getStatus = (req, res) => {
-  return res.json({ success: true, tokenExists: savedToken !== '', token: savedToken });
+export const getStatus = async (req, res) => {
+  const tokens = await readTokens();
+  return res.json({ success: true, totalVisitors: tokens.length });
 };
 
 export const sendPush = async (req, res) => {
-  const { title, body } = req.body;
+  const anonymousId = normalizeString(req.body.anonymousId);
+  const title = normalizeString(req.body.title);
+  const body = normalizeString(req.body.body);
 
-  if (!title || !body) {
-    return res.status(400).json({ success: false, error: 'Title and body are required.' });
+  if (!anonymousId || !title || !body) {
+    return res.status(400).json({ success: false, error: 'anonymousId, title, and body are required.' });
   }
 
-  if (!savedToken) {
-    return res.status(400).json({ success: false, error: 'No saved token available. Please enable notifications first.' });
+  const tokens = await readTokens();
+  const record = tokens.find((item) => item.anonymousId === anonymousId);
+
+  if (!record) {
+    return res.status(404).json({ success: false, error: 'Visitor not found.' });
   }
 
   try {
-    console.log('Sending Push');
+    console.log('Sending Push to anonymousId:', anonymousId);
     await admin.messaging().send({
-      token: savedToken,
+      token: record.token,
       notification: {
         title,
         body,

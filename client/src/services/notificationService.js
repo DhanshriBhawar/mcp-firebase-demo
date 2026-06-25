@@ -4,6 +4,8 @@ import { messaging, vapidKey } from '../firebase';
 const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mcp-firebase-demo-2.onrender.com';
 const API_PREFIX = `${DEFAULT_API_BASE_URL.replace(/\/+$/, '')}/api`;
 const DEFAULT_TIMEOUT_MS = 10000;
+const MCP_POLL_INTERVAL_MS = 250;
+const MCP_POLL_TIMEOUT_MS = 5000;
 
 const log = (message) => {
   console.log(`[NotificationService] ${message}`);
@@ -24,6 +26,103 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = DEFAULT_TIMEOUT_M
     throw error;
   }
 };
+
+const isValidAnonymousId = (value) => typeof value === 'string' && value.trim().length >= 8;
+
+const extractAnonymousIdFromObject = (source, visited = new WeakSet(), depth = 0) => {
+  if (!source || typeof source !== 'object' || visited.has(source) || depth > 3) {
+    return null;
+  }
+
+  visited.add(source);
+
+  if (typeof source.getVisitorId === 'function') {
+    const value = source.getVisitorId();
+    if (isValidAnonymousId(value)) {
+      return value;
+    }
+  }
+
+  const keys = Object.keys(source);
+  for (const key of keys) {
+    const normalizedKey = key.toLowerCase();
+    const value = source[key];
+
+    if (
+      isValidAnonymousId(value) &&
+      ['anonymousid', 'anonymousid', 'visitorid', 'visitorid', 'id', 'uuid'].includes(normalizedKey)
+    ) {
+      return value;
+    }
+  }
+
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'object' && value !== null) {
+      const nested = extractAnonymousIdFromObject(value, visited, depth + 1);
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
+};
+
+const findMcpAnonymousId = () => {
+  try {
+    const candidates = [
+      window.c360a,
+      window.c360aData,
+      window.mcp,
+      window.MCP,
+      window.sfmc,
+      window._sfmc,
+      window.digitalData,
+      window.analytics,
+      window.sfdc,
+      window.salesforce,
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate) {
+        continue;
+      }
+
+      const id = extractAnonymousIdFromObject(candidate);
+      if (id) {
+        return id;
+      }
+    }
+  } catch (error) {
+    log(`Error reading MCP anonymous ID: ${error.message}`);
+  }
+
+  return null;
+};
+
+const waitForMcpAnonymousId = async (timeoutMs = MCP_POLL_TIMEOUT_MS) => {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const id = findMcpAnonymousId();
+    if (id) {
+      return id;
+    }
+    await new Promise((resolve) => setTimeout(resolve, MCP_POLL_INTERVAL_MS));
+  }
+  return null;
+};
+
+const generateUuid = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `temp-${crypto.randomUUID()}`;
+  }
+
+  const randomPart = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  return `temp-${randomPart()}${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}${randomPart()}${randomPart()}`;
+};
+
+const isTemporaryAnonymousId = (anonymousId) => typeof anonymousId === 'string' && anonymousId.startsWith('temp-');
 
 export const requestPermission = async () => {
   if (!('Notification' in window)) {
@@ -61,18 +160,73 @@ export const generateToken = async (serviceWorkerRegistration) => {
   return token;
 };
 
-export const saveTokenToBackend = async (token) => {
-  if (!token) {
-    throw new Error('No token available to save.');
+export const getAnonymousId = async () => {
+  const storedId = localStorage.getItem('anonymousId');
+  if (isValidAnonymousId(storedId)) {
+    if (isTemporaryAnonymousId(storedId)) {
+      pollForRealAnonymousId(storedId).catch((error) => {
+        log(`Background MCP ID poll failed: ${error.message}`);
+      });
+    }
+    return storedId;
   }
 
-  log('Saving token to backend...');
+  log('Reading MCP Anonymous ID...');
+  const mcpId = await waitForMcpAnonymousId();
+  if (isValidAnonymousId(mcpId)) {
+    localStorage.setItem('anonymousId', mcpId);
+    log('MCP Anonymous ID found.');
+    return mcpId;
+  }
+
+  const tempId = generateUuid();
+  localStorage.setItem('anonymousId', tempId);
+  log('MCP Anonymous ID not found. Using temporary anonymousId.');
+  pollForRealAnonymousId(tempId).catch((error) => {
+    log(`Background MCP ID poll failed: ${error.message}`);
+  });
+  return tempId;
+};
+
+const pollForRealAnonymousId = async (tempId) => {
+  const realId = await waitForMcpAnonymousId(10000);
+  const currentId = localStorage.getItem('anonymousId');
+
+  if (!realId || currentId !== tempId) {
+    return;
+  }
+
+  log('MCP Anonymous ID became available. Replacing temporary id.');
+  localStorage.setItem('anonymousId', realId);
+
+  const token = localStorage.getItem('fcmToken');
+  if (token) {
+    await saveTokenToBackend({
+      anonymousId: realId,
+      token,
+      browser: navigator.userAgent,
+      platform: navigator.platform,
+    });
+  }
+};
+
+export const saveTokenToBackend = async ({ anonymousId, token, browser, platform }) => {
+  if (!anonymousId || !token) {
+    throw new Error('anonymousId and token are required to save the token.');
+  }
+
+  log('Saving token...');
   const response = await fetchWithTimeout(`${API_PREFIX}/save-token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({
+      anonymousId,
+      token,
+      browser,
+      platform,
+    }),
   });
 
   const result = await response.json();
@@ -85,7 +239,19 @@ export const saveTokenToBackend = async (token) => {
   return result;
 };
 
+export const saveToken = async (token) => {
+  const anonymousId = await getAnonymousId();
+  const browser = navigator.userAgent || null;
+  const platform = navigator.platform || null;
+  return saveTokenToBackend({ anonymousId, token, browser, platform });
+};
+
 export const sendTestNotification = async () => {
+  const anonymousId = localStorage.getItem('anonymousId');
+  if (!isValidAnonymousId(anonymousId)) {
+    throw new Error('Unable to send test notification without an anonymousId.');
+  }
+
   log('Sending test notification...');
 
   const response = await fetchWithTimeout(`${API_PREFIX}/send-push`, {
@@ -94,6 +260,7 @@ export const sendTestNotification = async () => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      anonymousId,
       title: 'Website Test Notification',
       body: 'This is a test notification from the website.',
     }),
@@ -110,6 +277,8 @@ export const sendTestNotification = async () => {
 
 export const initializeNotifications = async () => {
   try {
+    log('Initializing Notifications...');
+
     if (!('Notification' in window)) {
       log('Notification API is not supported by this browser.');
       return { status: 'unsupported' };
@@ -126,13 +295,16 @@ export const initializeNotifications = async () => {
       return { status: permission === 'denied' ? 'denied' : 'dismissed' };
     }
 
+    const anonymousId = await getAnonymousId();
+    log(`Using anonymousId: ${anonymousId}`);
+
     const registration = await navigator.serviceWorker.ready;
     const token = await generateToken(registration);
-    await saveTokenToBackend(token);
+    await saveToken(token);
     localStorage.setItem('fcmReady', 'true');
 
     log('Website ready for push notifications.');
-    return { status: 'ready', token };
+    return { status: 'ready', token, anonymousId };
   } catch (error) {
     log(`Initialization failed: ${error.message}`);
     return { status: 'error', error: error.message };
