@@ -133,7 +133,7 @@ export const saveToken = async (token) => {
 };
 
 export const sendTestNotification = async () => {
-  return sendPushNotification();
+//   return sendPushNotification();
 };
 
 export const initializeNotifications = async () => {
