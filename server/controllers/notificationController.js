@@ -50,19 +50,34 @@ export const sendPush = async (req, res) => {
   }
 
   try {
-    console.log('Sending Push to token:', token.slice(0, 20) + '...');
-    await admin.messaging().send({
+    const message = {
       token,
       notification: {
         title,
         body,
       },
-    });
+    };
 
-    console.log('Push Sent');
-    return res.json({ success: true, message: 'Push Sent Successfully' });
+    console.log('Sending Push to token:', token.slice(0, 20) + '...');
+    console.log('Firebase message payload:', JSON.stringify(message, null, 2));
+
+    const response = await admin.messaging().send(message);
+
+    console.log('========== FIREBASE RESPONSE ==========');
+    console.log(response);
+
+    return res.json({
+      success: true,
+      firebaseResponse: response,
+    });
   } catch (error) {
-    console.error('Failed to send push notification:', error);
-    return res.status(500).json({ success: false, error: 'Failed to send push notification.' });
+    console.error('========== FIREBASE ERROR ==========');
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error,
+    });
   }
 };
