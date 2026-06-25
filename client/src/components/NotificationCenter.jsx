@@ -12,8 +12,8 @@ function NotificationCenter() {
   const [tokenExists, setTokenExists] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
-  const apiPrefix = apiBaseUrl ? `${apiBaseUrl}/api` : '/api';
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://mcp-firebase-demo-2.onrender.com');
+  const apiPrefix = `${apiBaseUrl}/api`;
 
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
