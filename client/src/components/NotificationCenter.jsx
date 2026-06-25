@@ -1,72 +1,55 @@
 import { useEffect, useState } from 'react';
-import { initializeNotifications, sendTestNotification } from '../services/notificationService';
+import { useNotificationInitialization } from '../hooks/useNotificationInitialization';
 
 function NotificationCenter() {
-  const [notificationStatus, setNotificationStatus] = useState('initializing');
   const [sendStatus, setSendStatus] = useState('idle');
-  const [token, setToken] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const { notificationStatus, token, errorMessage, initialized, refresh } = useNotificationInitialization();
   const [deploymentTime, setDeploymentTime] = useState('');
   const [autoUpdateStatus, setAutoUpdateStatus] = useState('watching');
 
   useEffect(() => {
-    // Set deployment timestamp
     const now = new Date();
-    setDeploymentTime(now.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit',
-      hour12: true 
-    }));
+    setDeploymentTime(
+      now.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      })
+    );
+  }, []);
 
-    // Check for updates every 5 seconds
+  useEffect(() => {
     const updateInterval = setInterval(() => {
       fetch('/index.html', { cache: 'no-store' })
-        .then(response => response.text())
-        .then(html => {
+        .then((response) => response.text())
+        .then((html) => {
           const parser = new DOMParser();
           const newDoc = parser.parseFromString(html, 'text/html');
           const currentScript = document.querySelector('script[src*="main"]');
           const newScript = newDoc.querySelector('script[src*="main"]');
-          
+
           if (currentScript && newScript && currentScript.src !== newScript.src) {
             setAutoUpdateStatus('new version available - reloading...');
             setTimeout(() => window.location.reload(), 2000);
           }
         })
-        .catch(err => console.log('Update check failed:', err));
+        .catch((err) => console.log('Update check failed:', err));
     }, 5000);
 
     return () => clearInterval(updateInterval);
   }, []);
 
-  useEffect(() => {
-    const init = async () => {
-      const result = await initializeNotifications();
-      setNotificationStatus(result.status || 'error');
-      if (result.token) {
-        setToken(result.token);
-      }
-      if (result.error) {
-        setErrorMessage(result.error);
-      }
-    };
-
-    init();
-  }, []);
-
   const handleSendTest = async () => {
-    setErrorMessage('');
-    setSendStatus('sending');
+    setSendStatus('refreshing');
 
     try {
-      await sendTestNotification();
-      setSendStatus('sent');
+      await refresh();
+      setSendStatus('refreshed');
     } catch (error) {
-      setErrorMessage(error.message || 'Failed to send the test notification.');
       setSendStatus('error');
     }
   };
