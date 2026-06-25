@@ -133,7 +133,7 @@ export const saveToken = async (token) => {
 };
 
 export const sendTestNotification = async () => {
-//   return sendPushNotification();
+  return sendPushNotification();
 };
 
 export const initializeNotifications = async () => {
@@ -161,7 +161,7 @@ export const initializeNotifications = async () => {
     await saveToken(token);
     
     log('Sending welcome notification...');
-    await sendPushNotification();
+    // await sendPushNotification();
     
     localStorage.setItem('fcmReady', 'true');
 
